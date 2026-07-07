@@ -1,4 +1,5 @@
 #include <string>
+#include <iostream>
 #include "../include/cube.h"
 #include "../include/cubepices.h"
 
@@ -43,16 +44,19 @@ bool Cube::solved() const{
     for(int i =0;i<12;i++){
         if( i != Cube::edges[i].pieceID ||
             Cube::edges[i].axis[0] != 0 || 
-            Cube::edges[i].axis[1] != 1 || 
-            Cube::edges[i].axis[2] != 2)
-            return false;
+            Cube::edges[i].axis[1] != 1 ){
+                return false;
+        }
     }
 
     for(int i = 0;i<8;i++){
         if( i != Cube::corners[i].pieceID ||
             Cube::corners[i].axis[0] != 0 || 
-            Cube::corners[i].axis[1] != 1)
-            return false;
+            Cube::corners[i].axis[1] != 1 || 
+            Cube::corners[i].axis[2] != 2){
+
+                return false;
+            }
     }
 
     return true;

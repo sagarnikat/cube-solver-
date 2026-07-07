@@ -1,20 +1,33 @@
 #include <iostream>
+#include <chrono>
+
 #include "include/cube.h"
 #include "include/display.h"
+#include "include/solver.h"
 using namespace std;
+using namespace std::chrono;
 
-int main(){
-    Cube c;
+int main() {
+    Cube cube;
+
+    cube.move_D();
+    cube.move_D();
+    cube.move_D();
+
+    Solver solver = Solver(cube);
+
+    auto start = high_resolution_clock::now();
+
     
-    c.display();
+    cube.display();
     
-    c.applyAlgorithm("R U R' U' F2 L D B' U2 L' F R2 D' B U L2 D2 F' R B2");
+    solver.solve(1);
+    
+    cube.display();
 
-    c.display();
+    auto end = high_resolution_clock::now();
 
-    c.applyAlgorithm("B2 R' F D2 L2 U' B' D R2 F' L U2 B D' L' F2 U R U' R'");
+    auto total = duration_cast<nanoseconds>(end - start).count();
 
-    c.display();
-
-    return 0;
+    cout << "Total time: " << total << " ns\n";
 }

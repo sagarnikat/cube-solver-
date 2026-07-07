@@ -4,6 +4,12 @@
 constexpr std::array<const char*, 6> Colours = {
     "🟩", "🟥", "⬜", "🟧", "🟨", "🟦"
 };
+
+constexpr std::array<const char*, 18> Moves = {
+    "L","R","U","D","F","B",
+    "L2","R2","U2","D2","F2","B2",
+    "L'","R'","U'","D'","F'","B'"
+};
 // {U/D,L/R,F/B}
 const int CornerFaces[8][3] = {
     {0,1,4}, // c1
