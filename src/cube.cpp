@@ -9,10 +9,10 @@ Cube :: Cube(){
 
 void Cube::reset(){
     for(int i =0;i<12;i++){
-        edges[i] = Edge(i,0,1);
+        edges[i] = Edge(i,0);
     }
     for(int i =0; i<8;i++){
-        corners[i] = Corner(i,0,1,2);
+        corners[i] = Corner(i,0);
     }
 }
 
@@ -43,17 +43,14 @@ void Cube::applyAlgorithm(const std::string &alg){
 bool Cube::solved() const{
     for(int i =0;i<12;i++){
         if( i != Cube::edges[i].pieceID ||
-            Cube::edges[i].axis[0] != 0 || 
-            Cube::edges[i].axis[1] != 1 ){
+            Cube::edges[i].orientation != 0){
                 return false;
         }
     }
 
     for(int i = 0;i<8;i++){
         if( i != Cube::corners[i].pieceID ||
-            Cube::corners[i].axis[0] != 0 || 
-            Cube::corners[i].axis[1] != 1 || 
-            Cube::corners[i].axis[2] != 2){
+            Cube::corners[i].orientation != 0){
 
                 return false;
             }

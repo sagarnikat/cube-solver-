@@ -1,8 +1,12 @@
 #pragma once
 #include <array>
 
+// Sticker colour of each face-center, indexed by face id.
+// {white, green, red, blue, orange, yellow}
+//    0      1      2     3      4       5
+//    U      L      F     R      B       D
 constexpr std::array<const char*, 6> Colours = {
-    "🟩", "🟥", "⬜", "🟧", "🟨", "🟦"
+    "⬜", "🟩", "🟥", "🟦", "🟧", "🟨"
 };
 
 constexpr std::array<const char*, 18> Moves = {
@@ -10,30 +14,37 @@ constexpr std::array<const char*, 18> Moves = {
     "L2","R2","U2","D2","F2","B2",
     "L'","R'","U'","D'","F'","B'"
 };
-// {U/D,L/R,F/B}
+
+// The three stickers of every corner, listed CLOCKWISE (viewed from outside the
+// cube) starting with the U/D-face sticker. Because the order is chirality-
+// consistent across all 8 corners, orientation is a single cyclic shift:
+//     colour at slot s  =  CornerFaces[piece][(s - orientation + 3) % 3]
+// (slot 0 = U/D-facing, then clockwise). See tools/derive.cpp for the proof.
 const int CornerFaces[8][3] = {
-    {0,1,4}, // c1
-    {0,3,4}, // c2
-    {0,1,2}, // c3
-    {0,3,2}, // c4
-    {5,1,4}, // c5
-    {5,3,4}, // c6
-    {5,1,2}, // c7
-    {5,3,2}  // c8
+    {0,4,1}, // c0 ULB : U B L
+    {0,3,4}, // c1 URB : U R B
+    {0,1,2}, // c2 ULF : U L F
+    {0,2,3}, // c3 URF : U F R
+    {5,1,4}, // c4 DLB : D L B
+    {5,4,3}, // c5 DRB : D B R
+    {5,2,1}, // c6 DLF : D F L
+    {5,3,2}  // c7 DRF : D R F
 };
 
-// U/D > L/R > F/B
+// The two stickers of every edge. slot 0 is the U/D sticker (or, for the E-slice
+// edges e4..e7 which have no U/D sticker, the L/R sticker); slot 1 is the other.
+//     colour at slot s  =  EdgeFaces[piece][(s - orientation + 2) % 2]
 const int EdgeFaces[12][2] = {
-    {0,4}, // e1
-    {0,1}, // e2
-    {0,3}, // e3
-    {0,2}, // e4
-    {1,4}, // e5
-    {3,4}, // e6
-    {1,2}, // e7
-    {3,2}, // e8
-    {5,4}, // e9
-    {5,1}, // e10
-    {5,3}, // e11
-    {5,2}  // e12
+    {0,4}, // e0: U B
+    {0,1}, // e1: U L
+    {0,3}, // e2: U R
+    {0,2}, // e3: U F
+    {1,4}, // e4: L B
+    {3,4}, // e5: R B
+    {1,2}, // e6: L F
+    {3,2}, // e7: R F
+    {5,4}, // e8: D B
+    {5,1}, // e9: D L
+    {5,3}, // e10: D R
+    {5,2}  // e11: D F
 };

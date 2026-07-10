@@ -27,6 +27,7 @@ public:
     
     void display();
     void displayDebug();
+    void displayState();
     
     void Move(char face);
     void applyAlgorithm(const std::string& alg);

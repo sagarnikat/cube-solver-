@@ -27,16 +27,16 @@ void Cube::move_R(){
     rotateEdge(7, 10, 5, 2);
 
     // Corner orientation updates
-    swap(corners[3].axis[0], corners[3].axis[2]);
-    swap(corners[7].axis[0], corners[7].axis[2]);
-    swap(corners[5].axis[0], corners[5].axis[2]);
-    swap(corners[1].axis[0], corners[1].axis[2]);
+    corners[1].orientation = (corners[1].orientation + 2) % 3;
+    corners[3].orientation = (corners[3].orientation + 1) % 3;
+    corners[7].orientation = (corners[7].orientation + 2) % 3;
+    corners[5].orientation = (corners[5].orientation + 1) % 3;
 
-    // Edge orientations
-    swap(edges[7].axis[0], edges[7].axis[1]);
-    swap(edges[10].axis[0], edges[10].axis[1]);
-    swap(edges[5].axis[0], edges[5].axis[1]);
-    swap(edges[2].axis[0], edges[2].axis[1]);
+    // Edge orientation flips (R affects edge orientation)
+    edges[7].orientation ^= 1;
+    edges[10].orientation ^= 1;
+    edges[5].orientation ^= 1;
+    edges[2].orientation ^= 1;
 }
 
 void Cube::move_L(){
@@ -44,60 +44,55 @@ void Cube::move_L(){
     rotateEdge(4, 9, 6, 1);
 
     // Corner orientation updates
-    swap(corners[2].axis[0], corners[2].axis[2]);
-    swap(corners[6].axis[0], corners[6].axis[2]);
-    swap(corners[4].axis[0], corners[4].axis[2]);
-    swap(corners[0].axis[0], corners[0].axis[2]);
+    corners[0].orientation = (corners[0].orientation + 1) % 3;
+    corners[4].orientation = (corners[4].orientation + 2) % 3;
+    corners[6].orientation = (corners[6].orientation + 1) % 3;
+    corners[2].orientation = (corners[2].orientation + 2) % 3;
 
-    // Edge orientations
-    swap(edges[6].axis[0], edges[6].axis[1]);
-    swap(edges[9].axis[0], edges[9].axis[1]);
-    swap(edges[4].axis[0], edges[4].axis[1]);
-    swap(edges[1].axis[0], edges[1].axis[1]);
+    // Edge orientation flips (L affects edge orientation)
+    edges[4].orientation ^= 1;
+    edges[9].orientation ^= 1;
+    edges[6].orientation ^= 1;
+    edges[1].orientation ^= 1;
 }
 
 void Cube::move_U(){
     rotateCorner(0, 2, 3, 1);
     rotateEdge(0, 1, 3, 2);
-
-    // Corner orientation updates
-    swap(corners[0].axis[1], corners[0].axis[2]);
-    swap(corners[2].axis[1], corners[2].axis[2]);
-    swap(corners[3].axis[1], corners[3].axis[2]);
-    swap(corners[1].axis[1], corners[1].axis[2]);
+    // No orientation changes for U (per spec: only R/L change edge orientation,
+    // and U/D never change corner orientation in the U/F/R reference frame)
 }
 
 void Cube::move_D(){
     rotateCorner(6, 4, 5, 7);
     rotateEdge(9, 8, 10, 11);
-
-    // Corner orientation updates
-    swap(corners[6].axis[1], corners[6].axis[2]);
-    swap(corners[4].axis[1], corners[4].axis[2]);
-    swap(corners[5].axis[1], corners[5].axis[2]);
-    swap(corners[7].axis[1], corners[7].axis[2]);
+    // No orientation changes for D
 }
 
-void Cube::move_F(){
+void Cube::move_F()
+{
     rotateCorner(2, 6, 7, 3);
     rotateEdge(6, 11, 7, 3);
 
-    // Corner orientation updates
-    swap(corners[2].axis[1], corners[2].axis[0]);
-    swap(corners[6].axis[1], corners[6].axis[0]);
-    swap(corners[7].axis[1], corners[7].axis[0]);
-    swap(corners[3].axis[1], corners[3].axis[0]);
+    corners[2].orientation = (corners[2].orientation + 1) % 3;
+    corners[6].orientation = (corners[6].orientation + 2) % 3;
+    corners[7].orientation = (corners[7].orientation + 1) % 3;
+    corners[3].orientation = (corners[3].orientation + 2) % 3;
+
+    // Edge orientation NOT affected by F (only R/L flip edges)
 }
 
-void Cube::move_B(){
+void Cube::move_B()
+{
     rotateCorner(1, 5, 4, 0);
     rotateEdge(5, 8, 4, 0);
 
-    // Corner orientation updates
-    swap(corners[1].axis[1], corners[1].axis[0]);
-    swap(corners[5].axis[1], corners[5].axis[0]);
-    swap(corners[4].axis[1], corners[4].axis[0]);
-    swap(corners[0].axis[1], corners[0].axis[0]);
+    corners[1].orientation = (corners[1].orientation + 1) % 3;
+    corners[5].orientation = (corners[5].orientation + 2) % 3;
+    corners[4].orientation = (corners[4].orientation + 1) % 3;
+    corners[0].orientation = (corners[0].orientation + 2) % 3;
+
+    // Edge orientation NOT affected by B (only R/L flip edges)
 }
 
 void Cube::Move(char face){

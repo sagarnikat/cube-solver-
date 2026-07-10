@@ -1,43 +1,128 @@
-1. represent cube 
-2. display cube 
-3. make move functions
-4. implement move , and trubleshoting
+# Cube Solver — Architecture & Session Notes
 
-orinantation 
-    corner , {U/D,L/R,F/B} (changes every turn)
-        0 -> {G,R,W} -> default
-        1 -> {G,W,R}
-        2 -> {W,R,G} 
-        3 -> {W,G,R} 
-        4 -> {R,G,W} 
-        5 -> {R,W,G} 
+    ## What this is
+    A Rubik's cube solver in C++. Cube state uses a fast **cubie model**:
+    8 corners + 12 edges, each storing `{pieceID, orientation}`.
 
-        U/D turn -> swap 2,3
-        L/R turn -> swap 1,3
-        F/B turn -> swap 1,2
+    ## Coordinate / colour convention (matches notes.txt & tools/derive.cpp)
+    Face IDs: U=white(0), L=green(1), F=red(2), R=blue(3), B=orange(4), D=yellow(5)
+    3D axes:  U +y, D -y, L -x, R +x, F +z, B -z
 
-    edge, U/D > L/R > F/B (changes for R and L moves only)
-        0 -> {R,W}
-        1 -> {W,R}
-
-algoritham 
-
-    0. scramledd cube
-    1. 18 *(1) , 18 states for 18 moves (like R)
-    2. i.15 *(18*1) skip last move(for R skip R, R',2R)
-    ii. after "L" skip L and R moves 
-        L -> L,R
-        D -> D,U
-        B -> B,F
-        nodes per state = 18->13.5
+    ## File map
+    - `include/cubepices.h`  — `Corner`/`Edge` structs: `{uint8_t pieceID, orientation}`.
+    - `include/cube.h`       — `Cube` class: `corners[8]`, `edges[12]`, moves, display, solver hooks.
+    - `include/constants.h`  — `Colours[6]`, `Moves[18]`, and the sticker tables
+                               `CornerFaces[8][3]` (slot0=U/D, then CLOCKWISE) and `EdgeFaces[12][2]`.
+    - `include/display.h`    — `CornerSticker`/`EdgeSticker` decls.
+    - `include/solver.h`, `tables.h`, `utils.h` — solver scaffolding (WIP).
+    - `src/move.cpp`         — the 6 face moves. **VERIFIED CORRECT — DO NOT CHANGE.**
+    - `src/display.cpp`      — sticker rendering + `display()`, `displayDebug()`, `displayState()`.
 
 
-            18
-                |
-        R  U  F  L  D  B
-        15 15 15 12 12 12          -> 243 states
-        |
-        |
-        15 15 15 12 12 12
+solver plan 
 
+Plan: Kociemba Two-Phase Solver
 
+ Context
+
+ The cube now has a verified cubie model (corners[8], edges[12], each {pieceID, orientation})
+ and verified moves (src/move.cpp). The current Solver (src/solver.cpp) is a naive 18-move
+ IDDFS that prints every node — unusable beyond a few moves. We will replace it with Kociemba's
+ two-phase algorithm exactly as the user specified and I verified:
+
+ - Phase 1 → reduce to G1 = ⟨U, D, L2, R2, F2, B2⟩ (twist=0, flip=0, E-slice edges in slice), using all 18 moves.
+ - Phase 2 → solve within G1 using the 10 moves ⟨U, U', U2, D, D', D2, L2, R2, F2, B2⟩.
+ - Iterative refinement (user's chosen behavior): return a first solution, then keep searching
+ longer phase-1 sequences that admit shorter phase-2 finishes, keeping the best total, until a
+ time budget (~800 ms default) elapses or phase-1 length alone can't beat the best.
+
+ Key correctness levers already confirmed for THIS model:
+ - Edges flip only on L/R quarter-turns (mirror of textbook). Verified all 10 phase-2 moves preserve
+ twist=0, flip=0 and keep slice-edges in the slice, and {twist=flip=slice=0} = G1 exactly.
+ - All coordinate move-tables will be built by applying the already-verified move.cpp functions
+ to representative cubes and reading off coordinates — so tables are correct by construction, not
+ by hand-derivation. (Orientation-coord transitions are permutation-independent; permutation-coord
+ transitions are orientation-independent — so a "rest solved" representative is valid.)
+
+ Non-symmetry-reduced Kociemba: ~6 MB of tables built once at startup (<1 s), solutions ~20–23 moves.
+
+ Files
+
+ include/utils.h / src/utils.cpp — coordinate codecs (new)
+
+ Pure functions converting between a Cube and integer coordinates, plus combinatorics helpers.
+
+ Combinatorics helpers:
+ - int permToIndex(const int* perm, int n) / void indexToPerm(int idx, int n, int* perm) — Lehmer/factorial-base.
+ - int combToIndex(const bool occ[12]) / void indexToComb(int idx, bool occ[12]) — C(12,4)=495 combinatorial number system for the slice.
+
+ Phase-1 coordinates (get + set; set* leaves all other pieces solved):
+ - getTwist/setTwist — corner orientations, 0..2186 (3^7; 8th corner derived mod 3).
+ - getFlip/setFlip  — edge orientations, 0..2047 (2^11; 12th edge derived by parity).
+ - getSlice/setSlice — combination (positions of pieces {4,5,6,7}), 0..494.
+
+ Phase-2 coordinates:
+ - getCornPerm/setCornPerm — 8! = 40320.
+ - getUDEdgePerm/setUDEdgePerm — permutation of the 8 U/D edges (positions 0,1,2,3,8,9,10,11), 8! = 40320.
+ - getSlicePerm/setSlicePerm — permutation of the 4 slice edges (positions 4,5,6,7), 4! = 24.
+
+ include/tables.h / src/tables.cpp — precomputed tables (new)
+
+ A Tables singleton built once (lazy Tables::get()), holding:
+
+ Move tables (built via setCoord → applyAlgorithm(Moves[m]) → getCoord):
+ - Phase 1 (all 18 moves): twistMove[2187][18], flipMove[2048][18], sliceMove[495][18] (uint16).
+ - Phase 2 (10 moves, indexed by phase-2 ordinal): cornMove[40320][10], udEdgeMove[40320][10],
+ slicePermMove[24][10].
+ - PHASE2_MOVES[10] = indices into Moves[18] = {U,U2,U',D,D2,D',L2,R2,F2,B2}.
+
+ Pruning tables (byte arrays, BFS backward from solved coordinate over the phase's move set):
+ - Phase 1: pruneTwistSlice[2187*495], pruneFlipSlice[2048*495]. Heuristic = max of the two.
+ - Phase 2: pruneCornSlice[40320*24], pruneEdge8Slice[40320*24]. Heuristic = max of the two.
+
+ include/solver.h / src/solver.cpp — two-phase search (rewrite)
+
+ Repurpose the existing Solver class:
+ - Solver(Cube scramble).
+ - std::string solve(double budgetMs = 800.0) — returns the solution algorithm string; sets NodesCount.
+ - Internals:
+   - phase1search(twist, flip, slice, depth, bound, moveList) — IDA*; on hitting a G1 node
+ (heuristic 0) replays moveList on a copy of the scramble to get exact cubie state, reads
+ phase-2 coords, then calls phase2search with bound best - p1len - 1; keeps the best total.
+   - phase2search(corn, udEdge, slice, depth, bound, moveList) — IDA* over the 10 moves.
+   - Outer loop increases phase-1 bound; stops when p1bound >= best or the wall-clock budget
+ (via <chrono>, passed in — respects the tool's no-Date.now concern only in workflows, real
+ code uses steady_clock) is exceeded.
+   - Move-sequence pruning: no same-face twice in a row; canonical order for opposite faces (U before D,
+ L before R, F before B) to cut the branching factor.
+ - Drop the per-node cout/display() debug spam. Keep the old brute-force as commented reference (optional).
+
+ main.cpp — demo + self-test (rewrite)
+
+ Replace the benchmark loop with: generate N random scrambles, solve each, apply the returned
+ solution back onto the scramble and assert solved(), and report avg length / time / max length.
+
+     Replace the benchmark loop with: generate N random scrambles, solve each, apply the returned
+     solution back onto the scramble and assert solved(), and report avg length / time / max length.
+
+     include/constants.h
+
+     No change needed (already has Moves[18]). Phase-2 move-index list lives in tables.h.
+
+     Why this shape
+
+     - Tables derived from move.cpp ⇒ zero risk of a hand-transcription bug; the solver inherits the
+     move layer's proven correctness.
+     - Separate, independent coordinates (no symmetry reduction, no fused FRtoBR) keep the code readable
+     for a learning project while still solving in <1 s.
+     - Reusing applyAlgorithm/solved() for the phase-1→phase-2 handoff and final validation avoids
+     duplicating cube logic.
+
+     Verification
+
+     1. Build: g++ -std=c++20 -O2 main.cpp src/*.cpp -o /tmp/cube (must compile clean).
+     2. Table sanity: pruning value of the solved coordinate == 0; heuristic ≤ actual on spot checks;
+     derive.cpp still passes (unchanged).
+     3. End-to-end self-test in main: 10 000 random scrambles — every solution, applied to its scramble,
+     yields solved() == true. Report avg/max solution length (expect ~20–23 avg) and avg solve time.
+     4. Edge cases: already-solved cube → empty solution; single-move scrambles solve to length 1–2.

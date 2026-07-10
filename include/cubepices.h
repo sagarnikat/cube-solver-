@@ -1,19 +1,21 @@
 #pragma once
+#include <cstdint>
+
 
 struct Corner
 {
-    int pieceID;
-    int axis[3];
+    uint8_t pieceID;
+    uint8_t orientation;
 
-    Corner(int id = 0, int a = 0, int b = 1, int c = 2)
-        : pieceID(id), axis{a, b, c} {}
+    Corner(uint8_t id = 0, uint8_t ori = 0)
+        : pieceID(id), orientation(ori) {}
 };
 
 struct Edge
 {
-    int pieceID;
-    int axis[2];
+    uint8_t pieceID;
+    uint8_t orientation;
 
-    Edge(int id = 0, int a = 0, int b = 1)
-        : pieceID(id), axis{a, b} {}
+    Edge(uint8_t id = 0, uint8_t ori = 0)
+        : pieceID(id), orientation(ori) {}
 };
