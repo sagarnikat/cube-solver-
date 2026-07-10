@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <cctype>
 
 // Sticker colour of each face-center, indexed by face id.
 // {white, green, red, blue, orange, yellow}
@@ -48,3 +49,14 @@ const int EdgeFaces[12][2] = {
     {5,3}, // e10: D R
     {5,2}  // e11: D F
 };
+
+// Colour input helpers — map between face IDs (0..5) and single-letter codes.
+inline constexpr const char* COLOUR_CHARS = "WGRBOY";
+
+inline int charToFace(char c){
+    c = std::toupper(static_cast<unsigned char>(c));
+    for (int i = 0; i < 6; i++) if (COLOUR_CHARS[i] == c) return i;
+    return -1;
+}
+
+inline char faceToChar(int f){ return COLOUR_CHARS[f]; }
