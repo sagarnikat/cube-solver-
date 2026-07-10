@@ -5,16 +5,83 @@
 
 #include <algorithm>
 #include <vector>
+#include <fstream>
+using namespace std;
 
 // Phase-2 moves as indices into Moves[18] = {L,R,U,D,F,B,L2,R2,U2,D2,F2,B2,L',R',U',D',F',B'}.
 const int Tables::PHASE2_MOVES[Tables::NP2] = {2, 8, 14, 3, 9, 15, 6, 7, 10, 11};
 
 const Tables& Tables::get(){
-    static Tables instance;   // thread-safe, constructed once on first use
+    static Tables instance;
     return instance;
 }
 
+// --- serialisation helpers ------------------------------------------------
+
+// Magic number + version for the cache file.
+static const uint32_t CACHE_MAGIC   = 0x43554245;   // "CUBE"
+static const uint32_t CACHE_VERSION = 1;
+
+static bool writeRaw(ofstream& f, const void* data, size_t sz){
+    return f.write(static_cast<const char*>(data), sz).good();
+}
+
+static bool readRaw(ifstream& f, void* data, size_t sz){
+    return f.read(static_cast<char*>(data), sz).good();
+}
+
+bool Tables::load(const char* path){
+    ifstream f(path, ios::binary);
+    if (!f) return false;
+
+    uint32_t magic, ver;
+    if (!readRaw(f, &magic, 4) || magic != CACHE_MAGIC) return false;
+    if (!readRaw(f, &ver, 4) || ver != CACHE_VERSION) return false;
+
+    auto ok = readRaw(f, twistMove,     sizeof(twistMove))
+           && readRaw(f, flipMove,      sizeof(flipMove))
+           && readRaw(f, sliceMove,     sizeof(sliceMove))
+           && readRaw(f, cornMove,      sizeof(cornMove))
+           && readRaw(f, udEdgeMove,    sizeof(udEdgeMove))
+           && readRaw(f, slicePermMove, sizeof(slicePermMove))
+           && readRaw(f, pruneTwistSlice, sizeof(pruneTwistSlice))
+           && readRaw(f, pruneFlipSlice,  sizeof(pruneFlipSlice))
+           && readRaw(f, pruneCornSlice,  sizeof(pruneCornSlice))
+           && readRaw(f, pruneEdge8Slice, sizeof(pruneEdge8Slice))
+           && readRaw(f, &solvedSlice, 4);
+    if (!ok) return false;
+
+    return true;
+}
+
+void Tables::save(const char* path) const{
+    ofstream f(path, ios::binary);
+    if (!f) return;
+
+    writeRaw(f, &CACHE_MAGIC, 4);
+    writeRaw(f, &CACHE_VERSION, 4);
+    writeRaw(f, twistMove,     sizeof(twistMove));
+    writeRaw(f, flipMove,      sizeof(flipMove));
+    writeRaw(f, sliceMove,     sizeof(sliceMove));
+    writeRaw(f, cornMove,      sizeof(cornMove));
+    writeRaw(f, udEdgeMove,    sizeof(udEdgeMove));
+    writeRaw(f, slicePermMove, sizeof(slicePermMove));
+    writeRaw(f, pruneTwistSlice, sizeof(pruneTwistSlice));
+    writeRaw(f, pruneFlipSlice,  sizeof(pruneFlipSlice));
+    writeRaw(f, pruneCornSlice,  sizeof(pruneCornSlice));
+    writeRaw(f, pruneEdge8Slice, sizeof(pruneEdge8Slice));
+    writeRaw(f, &solvedSlice, 4);
+}
+
+// --- construction ---------------------------------------------------------
+
 Tables::Tables(){
+    if (load(CACHE_PATH)) return;
+    build();
+    save(CACHE_PATH);
+}
+
+void Tables::build(){
     buildMoveTables();
     buildPruneTables();
 }

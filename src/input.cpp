@@ -76,7 +76,9 @@ bool readStickersInteractively(Cube& out){
     static const char* FACE_NAMES[6] = {"U (top)", "L (left)", "F (front)", "R (right)", "B (back)", "D (bottom)"};
 
     int stickers[6][9];
-    cout << "\nEnter colours for each face (row by row, left to right).\n";
+    cout << "\n";
+    cout << "Hold your cube with WHITE centre on top and RED centre in front.\n";
+    cout << "Enter colours for each face (row by row, left to right).\n";
     cout << "Codes: W=White  G=Green  R=Red  B=Blue  O=Orange  Y=Yellow\n\n";
 
     for (int f = 0; f < 6; f++){
@@ -102,18 +104,45 @@ bool readStickersInteractively(Cube& out){
         }
     }
 
-    // Validate that each face's centre sticker matches its face colour.
-    // Centres are fixed and define the face identity.
-    for (int f = 0; f < 6; f++){
-        if (stickers[f][4] != f){
-            cout << "\nError: centre of " << FACE_NAMES[f]
-                 << " is " << faceToChar(stickers[f][4])
-                 << " but should be " << faceToChar(f) << ".\n";
-            return false;
+    // Validate that all 6 centre colours are distinct.
+    {
+        bool seen[6] = {};
+        for (int f = 0; f < 6; f++){
+            int c = stickers[f][4];
+            if (c < 0 || c > 5 || seen[c]){
+                cout << "\nError: centre of " << FACE_NAMES[f]
+                     << " (" << faceToChar(c) << ") duplicates another centre.\n";
+                return false;
+            }
+            seen[c] = true;
         }
     }
 
     Cube cube = fromStickers(stickers);
+
+    // Validate reconstruction.
+    {
+        bool seenCorner[8] = {};
+        bool ok = true;
+        for (int i = 0; i < 8; i++){
+            int p = cube.corners[i].pieceID;
+            if (p < 0 || p > 7 || seenCorner[p]){ ok = false; break; }
+            seenCorner[p] = true;
+        }
+        if (ok){
+            bool seenEdge[12] = {};
+            for (int i = 0; i < 12; i++){
+                int p = cube.edges[i].pieceID;
+                if (p < 0 || p > 11 || seenEdge[p]){ ok = false; break; }
+                seenEdge[p] = true;
+            }
+        }
+        if (!ok){
+            cout << "\nError: the input colours don't form a valid cube state.\n";
+            return false;
+        }
+    }
+
     cube.display();
     cout << "\nIs this correct? (y/n): ";
     string ans;

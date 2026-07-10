@@ -12,12 +12,16 @@
 //
 // Coordinate ranges: twist 2187, flip 2048, slice 495 (phase 1);
 //                    cornPerm/udEdgePerm 40320, slicePerm 24 (phase 2).
-// Sizes total ~6 MB; the object lives in static storage (Tables::get()).
+// Sizes total ~6 MB; cached to tables/cache.bin after first build (~400 ms,
+// loads in ~30 ms on subsequent runs).
 // ---------------------------------------------------------------------------
 
 struct Tables {
     // Lazily built singleton.
     static const Tables& get();
+
+    // Path to the on-disk cache file (relative to cwd).
+    static constexpr const char* CACHE_PATH = "tables/cache.bin";
 
     // The 10 phase-2 moves, as indices into constants.h `Moves[18]`:
     //   U, U2, U', D, D2, D', L2, R2, F2, B2
@@ -42,6 +46,9 @@ struct Tables {
 
 private:
     Tables();
+    void build();
+    bool load(const char* path);
+    void save(const char* path) const;
     void buildMoveTables();
     void buildPruneTables();
 };

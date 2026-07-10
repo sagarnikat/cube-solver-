@@ -171,6 +171,23 @@ When using `i`, enter colours for each face in row-major order (left to right, t
 
 The prompt shows the face layout with numbered positions so you know which sticker to enter.
 
+## Performance
+
+Benchmark results from 1000 random scrambles (25 moves each, 100 ms solve budget):
+
+| Metric | Value |
+|--------|-------|
+| **Pass rate** | **100%** (1000/1000) |
+| **Moves** | avg **20.02** | min **9** | max **26** |
+| **Time** | avg **105.2 ms** | min **2.8 ms** | max **313.7 ms** |
+
+Build and run the benchmark:
+
+```bash
+g++ -std=c++20 -O2 -I. tools/benchmark.cpp src/*.cpp -o tools/benchmark
+./tools/benchmark [numScrambles] [budgetMs]
+```
+
 ## References
 
 - [Kociemba's Two-Phase Algorithm](http://kociemba.org/cube.htm)
